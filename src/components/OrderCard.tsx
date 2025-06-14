@@ -1,267 +1,143 @@
-import { useState } from "react";
-import { MapPin, Clock, CreditCard, Package, Printer, Check, Truck, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 
-interface Order {
-  id: string;
-  session_id: string;
-  total: number;
-  address: string;
-  payment_method: string;
-  status: string;
-  observations: string | null;
-  items: any;
-  toppings: any;
-  estimated_delivery: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Clock, MapPin, CreditCard, Package, FileText } from 'lucide-react';
+import { Order } from '../types/order';
+import OrderStatusButtons from './OrderStatusButtons';
 
 interface OrderCardProps {
   order: Order;
-  onStatusChange: () => void;
+  onStatusChange?: (orderId: string, newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered') => void;
 }
 
-export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
-
-  const getKeyword = () => {
-    if (order.observations) {
-      const match = order.observations.match(/Palavra-chave:\s*(\d+)/);
-      return match ? match[1] : "N/A";
-    }
-    return "N/A";
-  };
-
-  const getMainItems = () => {
-    if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-      return order.items.map((item, index) => (
-        <div key={index} className="text-sm text-gray-700 font-medium">
-          {item.description || item.name || "Item não especificado"}
-        </div>
-      ));
-    }
-    
-    // Extrair apenas produto principal e toppings da mensagem (até "Total:")
-    if (order.observations) {
-      const fullMessage = order.observations;
-      
-      // Encontrar a posição do "Total:" para parar a extração
-      const totalIndex = fullMessage.indexOf('Total:');
-      if (totalIndex !== -1) {
-        // Extrair apenas o texto antes de "Total:"
-        const itemsSection = fullMessage.substring(0, totalIndex).trim();
-        
-        // Remover quebras de linha e espaços extras
-        const cleanedText = itemsSection.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-        
-        if (cleanedText) {
-          return (
-            <div className="text-sm text-gray-700 font-medium">
-              {cleanedText}
-            </div>
-          );
-        }
-      }
-    }
-    
-    return (
-      <div className="text-sm text-gray-700 font-medium">
-        Itens não especificados
-      </div>
-    );
-  };
-
-  const getToppings = () => {
-    if (order.toppings && Array.isArray(order.toppings) && order.toppings.length > 0) {
-      return order.toppings.map((topping, index) => (
-        <div key={index} className="text-sm text-gray-600 ml-2">
-          - Topping: {topping.name}
-        </div>
-      ));
-    }
-    return null;
-  };
-
-  const updateOrderStatus = async (newStatus: string) => {
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from("pedidos_orders")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", order.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Status atualizado",
-        description: `Pedido movido para ${getStatusLabel(newStatus)}`,
-      });
-      
-      onStatusChange();
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o status do pedido",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
+const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-blue-500';
+      case 'preparing': return 'bg-orange-500';
+      case 'delivering': return 'bg-purple-500';
+      case 'delivered': return 'bg-green-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      confirmed: "Confirmados",
-      preparing: "Preparando", 
-      delivering: "Entregando",
-      delivered: "Entregues"
-    };
-    return labels[status] || status;
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'Confirmado';
+      case 'preparing': return 'Preparando';
+      case 'delivering': return 'Saiu para entrega';
+      case 'delivered': return 'Entregue';
+      default: return status;
+    }
   };
 
-  const getNextStatus = () => {
-    const statusFlow = {
-      confirmed: "preparing",
-      preparing: "delivering", 
-      delivering: "delivered",
-      delivered: null
-    };
-    return statusFlow[order.status];
+  const formatTime = (isoString: string) => {
+    return new Date(isoString).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const getActionButton = () => {
-    const nextStatus = getNextStatus();
-    if (!nextStatus) return null;
-
-    const buttonConfig = {
-      preparing: { icon: Package, text: "Iniciar Preparo", variant: "default" as const },
-      delivering: { icon: Truck, text: "Saiu para Entrega", variant: "default" as const },
-      delivered: { icon: CheckCircle, text: "Marcar Entregue", variant: "default" as const }
-    };
-
-    const config = buttonConfig[nextStatus];
-    const IconComponent = config.icon;
-
-    return (
-      <Button
-        onClick={() => updateOrderStatus(nextStatus)}
-        disabled={isUpdating}
-        size="sm"
-        variant={config.variant}
-        className="w-full"
-      >
-        <IconComponent className="h-4 w-4 mr-2" />
-        {config.text}
-      </Button>
-    );
-  };
-
-  const handlePrint = () => {
-    const toppingsText = order.toppings && Array.isArray(order.toppings) ? 
-      order.toppings.map(t => `  - Topping: ${t.name}`).join('\n') : '';
-    
-    const printContent = `
-      PEDIDO ${getKeyword()}
-      
-      ${order.items && Array.isArray(order.items) ? 
-        order.items.map(item => item.description || item.name || 'Item').join('\n') : 
-        'Itens não especificados'
-      }
-      
-      ${toppingsText ? `${toppingsText}` : ''}
-      
-      Total: R$ ${order.total.toFixed(2)}
-      
-      Endereço: ${order.address}
-      Pagamento: ${order.payment_method}
-      
-      Pedido em: ${new Date(order.created_at).toLocaleString()}
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Pedido ${getKeyword()}</title>
-            <style>
-              body { font-family: monospace; font-size: 12px; margin: 20px; }
-              .header { text-align: center; font-weight: bold; margin-bottom: 20px; }
-            </style>
-          </head>
-          <body>
-            <div class="header">PEDIDO ${getKeyword()}</div>
-            <pre>${printContent}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+  const handleStatusChange = (newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered') => {
+    if (onStatusChange) {
+      onStatusChange(order.id, newStatus);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono">
-            Pedido #{getKeyword()}
-          </Badge>
-          <Badge variant="secondary" className="text-xs">
-            {order.status === 'confirmed' ? 'Confirmado' : 
-             order.status === 'preparing' ? 'Preparando' :
-             order.status === 'delivering' ? 'Entregando' : 'Entregue'}
+    <Card className="w-full hover:shadow-lg transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg font-semibold">
+            Pedido #{order.id.slice(-8)}
+          </CardTitle>
+          <Badge className={`${getStatusColor(order.status)} text-white`}>
+            {getStatusText(order.status)}
           </Badge>
         </div>
-        <Button
-          onClick={handlePrint}
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0"
-        >
-          <Printer className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="space-y-2 mb-4">
-        <div className="text-xs text-gray-500 font-medium">Itens:</div>
-        <div className="space-y-1">
-          {getMainItems()}
-        </div>
-      </div>
-
-      <div className="border-t pt-3 space-y-3">
-        <div className="text-sm font-semibold text-green-600">
-          Total: R$ {order.total.toFixed(2)}
-        </div>
-
-        <div className="flex items-start gap-2 text-xs text-gray-600">
-          <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-          <span className="break-words">{order.address}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-gray-600">
-          <CreditCard className="h-3 w-3 flex-shrink-0" />
-          <span>{order.payment_method}</span>
+        <p className="text-sm text-muted-foreground">
+          Sessão: {order.sessionId.slice(0, 8)}...
+        </p>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Itens do pedido */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Package className="h-4 w-4" />
+            Itens do pedido
+          </div>
+          <div className="pl-6 space-y-1">
+            {order.items.map((item, index) => (
+              <div key={index} className="flex justify-between text-sm">
+                <span>{item.name}</span>
+                <span className="font-medium">R$ {item.price.toFixed(2)}</span>
+              </div>
+            ))}
+            {order.toppings.map((topping, index) => (
+              <div key={index} className="flex justify-between text-sm text-muted-foreground">
+                <span>+ {topping.name}</span>
+                <span>R$ {topping.price.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <Clock className="h-3 w-3 flex-shrink-0" />
+        {/* Total */}
+        <div className="border-t pt-2">
+          <div className="flex justify-between font-semibold">
+            <span>Total</span>
+            <span className="text-lg text-green-600">R$ {order.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {/* Endereço */}
+        <div className="flex items-start gap-2 text-sm">
+          <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
+          <span>{order.address}</span>
+        </div>
+
+        {/* Forma de pagamento */}
+        <div className="flex items-center gap-2 text-sm">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <span>{order.paymentMethod}</span>
+        </div>
+
+        {/* Observações */}
+        {order.observations && (
+          <div className="flex items-start gap-2 text-sm">
+            <FileText className="h-4 w-4 mt-0.5 text-muted-foreground" />
+            <div>
+              <span className="font-medium">Observações:</span>
+              <p className="text-muted-foreground mt-1">{order.observations}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Horários */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
           <span>
-            {new Date(order.created_at).toLocaleTimeString('pt-BR', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
+            Pedido: {formatTime(order.createdAt)}
+            {order.estimatedDelivery && (
+              <> • Previsão: {formatTime(order.estimatedDelivery)}</>
+            )}
           </span>
         </div>
 
-        {getActionButton()}
-      </div>
-    </div>
+        {/* Botões de Status */}
+        {onStatusChange && (
+          <div className="border-t pt-4">
+            <div className="text-sm font-medium mb-2">Atualizar Status:</div>
+            <OrderStatusButtons 
+              currentStatus={order.status}
+              onStatusChange={handleStatusChange}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+
+export default OrderCard;
