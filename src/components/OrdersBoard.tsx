@@ -1,8 +1,10 @@
 
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { OrderColumn } from "@/components/OrderColumn";
 import { Loader2 } from "lucide-react";
+import { Order } from "@/types/order";
 
 interface OrdersBoardProps {
   searchTerm: string;
@@ -25,7 +27,21 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data;
+      
+      // Transform database data to match our Order interface
+      return data.map((dbOrder): Order => ({
+        id: dbOrder.id,
+        sessionId: dbOrder.session_id,
+        items: Array.isArray(dbOrder.items) ? dbOrder.items : [],
+        toppings: Array.isArray(dbOrder.toppings) ? dbOrder.toppings : [],
+        total: dbOrder.total,
+        address: dbOrder.address,
+        paymentMethod: dbOrder.payment_method,
+        status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
+        createdAt: dbOrder.created_at,
+        estimatedDelivery: dbOrder.estimated_delivery,
+        observations: dbOrder.observations
+      }));
     },
     refetchInterval: 5000, // Atualiza a cada 5 segundos
   });
@@ -74,3 +90,4 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
     </div>
   );
 };
+
