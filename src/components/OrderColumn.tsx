@@ -1,5 +1,5 @@
 
-import { OrderCard } from "@/components/OrderCard";
+import OrderCard from "@/components/OrderCard";
 
 interface Order {
   id: string;
