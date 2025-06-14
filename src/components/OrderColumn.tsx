@@ -10,6 +10,7 @@ interface Order {
   status: string;
   observations: string | null;
   items: any;
+  toppings: any;
   estimated_delivery: string | null;
   created_at: string;
   updated_at: string;
