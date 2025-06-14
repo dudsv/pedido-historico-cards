@@ -84,81 +84,51 @@ export type Database = {
         }
         Relationships: []
       }
-      orders: {
-        Row: {
-          created_at: string
-          endereco: string | null
-          forma_pagamento: string | null
-          id: string
-          itens: Json | null
-          observacoes: string | null
-          status: string | null
-          valor_total: number | null
-        }
-        Insert: {
-          created_at?: string
-          endereco?: string | null
-          forma_pagamento?: string | null
-          id?: string
-          itens?: Json | null
-          observacoes?: string | null
-          status?: string | null
-          valor_total?: number | null
-        }
-        Update: {
-          created_at?: string
-          endereco?: string | null
-          forma_pagamento?: string | null
-          id?: string
-          itens?: Json | null
-          observacoes?: string | null
-          status?: string | null
-          valor_total?: number | null
-        }
-        Relationships: []
-      }
       pedidos_orders: {
         Row: {
           address: string
-          created_at: string
+          created_at: string | null
+          customer_name: string | null
           estimated_delivery: string | null
           id: string
           items: Json
+          keyword: string
           observations: string | null
           payment_method: string
           session_id: string
           status: string
-          toppings: Json
           total: number
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           address: string
-          created_at?: string
+          created_at?: string | null
+          customer_name?: string | null
           estimated_delivery?: string | null
           id?: string
           items?: Json
+          keyword: string
           observations?: string | null
           payment_method: string
           session_id: string
           status?: string
-          toppings?: Json
           total: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           address?: string
-          created_at?: string
+          created_at?: string | null
+          customer_name?: string | null
           estimated_delivery?: string | null
           id?: string
           items?: Json
+          keyword?: string
           observations?: string | null
           payment_method?: string
           session_id?: string
           status?: string
-          toppings?: Json
           total?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -263,10 +233,6 @@ export type Database = {
           metadata: Json
           similarity: number
         }[]
-      }
-      process_chat_to_order: {
-        Args: Record<PropertyKey, never> | { p_session_id: string }
-        Returns: undefined
       }
       sparsevec_out: {
         Args: { "": unknown }

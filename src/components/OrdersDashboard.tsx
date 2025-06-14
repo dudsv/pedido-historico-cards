@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,7 @@ const OrdersDashboard = () => {
               Dashboard de Pedidos - Gnomus Bowls
             </h1>
             <p className="text-muted-foreground">
-              Gerencie todos os pedidos do seu delivery de açaí
+              Pedidos processados automaticamente do chat WhatsApp via n8n
             </p>
           </div>
           <Button 
@@ -87,6 +88,9 @@ const OrdersDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{orders.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Processados automaticamente
+              </p>
             </CardContent>
           </Card>
 
@@ -97,6 +101,9 @@ const OrdersDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{statusCounts.confirmed}</div>
+              <p className="text-xs text-muted-foreground">
+                Aguardando preparo
+              </p>
             </CardContent>
           </Card>
 
@@ -107,6 +114,9 @@ const OrdersDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{statusCounts.delivered}</div>
+              <p className="text-xs text-muted-foreground">
+                Concluídos
+              </p>
             </CardContent>
           </Card>
 
@@ -119,6 +129,9 @@ const OrdersDashboard = () => {
               <div className="text-2xl font-bold text-emerald-600">
                 R$ {totalRevenue.toFixed(2)}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Vendas do período
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -166,7 +179,7 @@ const OrdersDashboard = () => {
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Carregando pedidos...</span>
+            <span className="ml-2 text-muted-foreground">Carregando pedidos automatizados...</span>
           </div>
         ) : filteredOrders.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -186,14 +199,19 @@ const OrdersDashboard = () => {
               <h3 className="text-lg font-semibold mb-2">Nenhum pedido encontrado</h3>
               <p className="text-muted-foreground mb-4">
                 {selectedStatus === 'all' 
-                  ? 'Ainda não há pedidos confirmados no sistema.'
+                  ? 'Ainda não há pedidos processados automaticamente pelo sistema.'
                   : `Não há pedidos com status "${selectedStatus}".`
                 }
               </p>
-              <Button onClick={handleRefresh} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Verificar Novamente
-              </Button>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Os pedidos são criados automaticamente quando um cliente finaliza uma compra via WhatsApp.
+                </p>
+                <Button onClick={handleRefresh} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Verificar Novamente
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
