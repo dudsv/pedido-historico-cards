@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Package, Clock, TrendingUp, AlertCircle } from 'lucide-react';
-import { useOrders } from '../hooks/useOrders';
+import { useOrders } from '@/hooks/useOrders';
 import OrderCard from './OrderCard';
 
 const OrdersDashboard = () => {

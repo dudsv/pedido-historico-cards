@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, CreditCard, Package, FileText } from 'lucide-react';
-import { Order } from '../types/order';
+import { Order } from '@/types/order';
 import OrderStatusButtons from './OrderStatusButtons';
 
 interface OrderCardProps {
