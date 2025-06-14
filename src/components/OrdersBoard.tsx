@@ -20,107 +20,133 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
   const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      console.log("Fetching orders from pedidos_orders table...");
+      console.log("=== INICIANDO BUSCA DE PEDIDOS ===");
       
-      const { data, error } = await supabase
-        .from("pedidos_orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching orders:", error);
-        throw error;
-      }
-      
-      console.log("Raw data from database:", data);
-      
-      if (!data || data.length === 0) {
-        console.log("No orders found in database");
-        // Vamos tentar buscar da tabela n8n_chat_histories como fallback
-        console.log("Trying to fetch from n8n_chat_histories as fallback...");
+      try {
+        console.log("1. Tentando buscar da tabela pedidos_orders...");
+        
+        const { data: pedidosData, error: pedidosError } = await supabase
+          .from("pedidos_orders")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        console.log("2. Resultado da busca pedidos_orders:", { pedidosData, pedidosError });
+        
+        if (pedidosError) {
+          console.error("Erro ao buscar pedidos_orders:", pedidosError);
+        }
+        
+        if (pedidosData && pedidosData.length > 0) {
+          console.log("3. Encontrados pedidos na tabela pedidos_orders:", pedidosData.length);
+          
+          const transformedOrders = pedidosData.map((dbOrder): Order => {
+            console.log("4. Transformando pedido:", dbOrder);
+            
+            let items: OrderItem[] = [];
+            let toppings: OrderItem[] = [];
+            
+            try {
+              if (dbOrder.items) {
+                items = Array.isArray(dbOrder.items) 
+                  ? (dbOrder.items as unknown as OrderItem[])
+                  : [];
+              }
+              
+              if (dbOrder.toppings) {
+                toppings = Array.isArray(dbOrder.toppings) 
+                  ? (dbOrder.toppings as unknown as OrderItem[])
+                  : [];
+              }
+            } catch (parseError) {
+              console.error("Erro ao processar items/toppings:", parseError);
+            }
+            
+            const transformedOrder: Order = {
+              id: dbOrder.id,
+              sessionId: dbOrder.session_id,
+              items,
+              toppings,
+              total: dbOrder.total,
+              address: dbOrder.address,
+              paymentMethod: dbOrder.payment_method,
+              status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
+              createdAt: dbOrder.created_at,
+              estimatedDelivery: dbOrder.estimated_delivery,
+              observations: dbOrder.observations
+            };
+            
+            console.log("5. Pedido transformado:", transformedOrder);
+            return transformedOrder;
+          });
+          
+          console.log("6. Todos os pedidos transformados:", transformedOrders);
+          return transformedOrders;
+        }
+        
+        console.log("7. Nenhum pedido encontrado em pedidos_orders, tentando n8n_chat_histories...");
         
         const { data: chatData, error: chatError } = await supabase
           .from("n8n_chat_histories")
           .select("*")
           .order("id", { ascending: false })
-          .limit(10);
+          .limit(20);
+        
+        console.log("8. Resultado da busca n8n_chat_histories:", { chatData, chatError });
         
         if (chatError) {
-          console.error("Error fetching chat histories:", chatError);
-          return [];
+          console.error("Erro ao buscar chat histories:", chatError);
         }
         
-        console.log("Chat histories data:", chatData);
-        
-        // Criar pedidos mock para teste se não houver dados
+        // Se não encontrarmos dados reais, vamos sempre retornar um pedido mock para teste
+        console.log("9. Criando pedido mock para teste...");
         const mockOrders: Order[] = [
           {
-            id: "mock-1",
-            sessionId: "mock-session-1",
-            items: [{ name: "Açaí 400ml", price: 15.00 }],
-            toppings: [{ name: "Granola", price: 2.00 }],
-            total: 17.00,
-            address: "Rua das Flores, 123",
+            id: "mock-order-1",
+            sessionId: "mock-session-123",
+            items: [
+              { name: "Açaí 400ml", price: 15.00 },
+              { name: "Açaí 600ml", price: 20.00 }
+            ],
+            toppings: [
+              { name: "Granola", price: 2.00 },
+              { name: "Banana", price: 1.50 }
+            ],
+            total: 38.50,
+            address: "Rua das Flores, 123 - Centro",
             paymentMethod: "Cartão de Crédito",
             status: "confirmed",
             createdAt: new Date().toISOString(),
             estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-            observations: "Pedido de teste"
+            observations: "Pedido de teste - favor não entregar açúcar extra"
+          },
+          {
+            id: "mock-order-2",
+            sessionId: "mock-session-456",
+            items: [
+              { name: "Smoothie de Morango", price: 12.00 }
+            ],
+            toppings: [
+              { name: "Leite Condensado", price: 1.00 }
+            ],
+            total: 13.00,
+            address: "Av. Principal, 456 - Bairro Novo",
+            paymentMethod: "Pix",
+            status: "preparing",
+            createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+            estimatedDelivery: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+            observations: "Cliente preferiu sem canudo"
           }
         ];
         
-        console.log("Returning mock orders:", mockOrders);
+        console.log("10. Retornando pedidos mock:", mockOrders);
         return mockOrders;
+        
+      } catch (err) {
+        console.error("Erro geral na busca:", err);
+        throw err;
       }
-      
-      // Transform database data to match our Order interface
-      const transformedOrders = data.map((dbOrder): Order => {
-        console.log("Transforming order:", dbOrder);
-        
-        // Safely parse items and toppings
-        let items: OrderItem[] = [];
-        let toppings: OrderItem[] = [];
-        
-        try {
-          if (dbOrder.items && Array.isArray(dbOrder.items)) {
-            items = dbOrder.items.map((item: any) => ({
-              name: item.name || 'Item não especificado',
-              price: typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0
-            }));
-          }
-          
-          if (dbOrder.toppings && Array.isArray(dbOrder.toppings)) {
-            toppings = dbOrder.toppings.map((topping: any) => ({
-              name: topping.name || 'Topping não especificado',
-              price: typeof topping.price === 'number' ? topping.price : parseFloat(topping.price) || 0
-            }));
-          }
-        } catch (parseError) {
-          console.error("Error parsing items/toppings:", parseError);
-        }
-        
-        const transformedOrder: Order = {
-          id: dbOrder.id,
-          sessionId: dbOrder.session_id,
-          items,
-          toppings,
-          total: dbOrder.total,
-          address: dbOrder.address,
-          paymentMethod: dbOrder.payment_method,
-          status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
-          createdAt: dbOrder.created_at,
-          estimatedDelivery: dbOrder.estimated_delivery,
-          observations: dbOrder.observations
-        };
-        
-        console.log("Transformed order:", transformedOrder);
-        return transformedOrder;
-      });
-      
-      console.log("All transformed orders:", transformedOrders);
-      return transformedOrders;
     },
-    refetchInterval: 5000, // Atualiza a cada 5 segundos
+    refetchInterval: 5000,
   });
 
   const filteredOrders = orders?.filter(order => {
@@ -131,6 +157,8 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
     return keyword.includes(search) || address.includes(search);
   });
 
+  console.log("=== RESULTADO FINAL ===");
+  console.log("Orders recebidas:", orders);
   console.log("Filtered orders:", filteredOrders);
 
   if (isLoading) {
@@ -162,7 +190,7 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
       {ORDER_STATUSES.map((status) => {
         const statusOrders = filteredOrders?.filter(order => order.status === status.key) || [];
         
-        console.log(`Orders for status ${status.key}:`, statusOrders);
+        console.log(`Orders para status ${status.key}:`, statusOrders);
         
         return (
           <OrderColumn
