@@ -20,131 +20,68 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
   const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      console.log("=== INICIANDO BUSCA DE PEDIDOS ===");
+      console.log("=== BUSCANDO PEDIDOS DA TABELA pedidos_orders ===");
       
-      try {
-        console.log("1. Tentando buscar da tabela pedidos_orders...");
-        
-        const { data: pedidosData, error: pedidosError } = await supabase
-          .from("pedidos_orders")
-          .select("*")
-          .order("created_at", { ascending: false });
-        
-        console.log("2. Resultado da busca pedidos_orders:", { pedidosData, pedidosError });
-        
-        if (pedidosError) {
-          console.error("Erro ao buscar pedidos_orders:", pedidosError);
-        }
-        
-        if (pedidosData && pedidosData.length > 0) {
-          console.log("3. Encontrados pedidos na tabela pedidos_orders:", pedidosData.length);
-          
-          const transformedOrders = pedidosData.map((dbOrder): Order => {
-            console.log("4. Transformando pedido:", dbOrder);
-            
-            let items: OrderItem[] = [];
-            let toppings: OrderItem[] = [];
-            
-            try {
-              if (dbOrder.items) {
-                items = Array.isArray(dbOrder.items) 
-                  ? (dbOrder.items as unknown as OrderItem[])
-                  : [];
-              }
-              
-              if (dbOrder.toppings) {
-                toppings = Array.isArray(dbOrder.toppings) 
-                  ? (dbOrder.toppings as unknown as OrderItem[])
-                  : [];
-              }
-            } catch (parseError) {
-              console.error("Erro ao processar items/toppings:", parseError);
-            }
-            
-            const transformedOrder: Order = {
-              id: dbOrder.id,
-              sessionId: dbOrder.session_id,
-              items,
-              toppings,
-              total: dbOrder.total,
-              address: dbOrder.address,
-              paymentMethod: dbOrder.payment_method,
-              status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
-              createdAt: dbOrder.created_at,
-              estimatedDelivery: dbOrder.estimated_delivery,
-              observations: dbOrder.observations
-            };
-            
-            console.log("5. Pedido transformado:", transformedOrder);
-            return transformedOrder;
-          });
-          
-          console.log("6. Todos os pedidos transformados:", transformedOrders);
-          return transformedOrders;
-        }
-        
-        console.log("7. Nenhum pedido encontrado em pedidos_orders, tentando n8n_chat_histories...");
-        
-        const { data: chatData, error: chatError } = await supabase
-          .from("n8n_chat_histories")
-          .select("*")
-          .order("id", { ascending: false })
-          .limit(20);
-        
-        console.log("8. Resultado da busca n8n_chat_histories:", { chatData, chatError });
-        
-        if (chatError) {
-          console.error("Erro ao buscar chat histories:", chatError);
-        }
-        
-        // Se não encontrarmos dados reais, vamos sempre retornar um pedido mock para teste
-        console.log("9. Criando pedido mock para teste...");
-        const mockOrders: Order[] = [
-          {
-            id: "mock-order-1",
-            sessionId: "mock-session-123",
-            items: [
-              { name: "Açaí 400ml", price: 15.00 },
-              { name: "Açaí 600ml", price: 20.00 }
-            ],
-            toppings: [
-              { name: "Granola", price: 2.00 },
-              { name: "Banana", price: 1.50 }
-            ],
-            total: 38.50,
-            address: "Rua das Flores, 123 - Centro",
-            paymentMethod: "Cartão de Crédito",
-            status: "confirmed",
-            createdAt: new Date().toISOString(),
-            estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-            observations: "Pedido de teste - favor não entregar açúcar extra"
-          },
-          {
-            id: "mock-order-2",
-            sessionId: "mock-session-456",
-            items: [
-              { name: "Smoothie de Morango", price: 12.00 }
-            ],
-            toppings: [
-              { name: "Leite Condensado", price: 1.00 }
-            ],
-            total: 13.00,
-            address: "Av. Principal, 456 - Bairro Novo",
-            paymentMethod: "Pix",
-            status: "preparing",
-            createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-            estimatedDelivery: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
-            observations: "Cliente preferiu sem canudo"
-          }
-        ];
-        
-        console.log("10. Retornando pedidos mock:", mockOrders);
-        return mockOrders;
-        
-      } catch (err) {
-        console.error("Erro geral na busca:", err);
-        throw err;
+      const { data: pedidosData, error: pedidosError } = await supabase
+        .from("pedidos_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      console.log("Dados brutos da tabela pedidos_orders:", { pedidosData, pedidosError });
+      
+      if (pedidosError) {
+        console.error("Erro ao buscar pedidos:", pedidosError);
+        throw pedidosError;
       }
+      
+      if (!pedidosData || pedidosData.length === 0) {
+        console.log("Nenhum pedido encontrado na tabela pedidos_orders");
+        return [];
+      }
+      
+      const transformedOrders = pedidosData.map((dbOrder): Order => {
+        console.log("Transformando pedido:", dbOrder);
+        
+        // Parse items and toppings safely
+        let items: OrderItem[] = [];
+        let toppings: OrderItem[] = [];
+        
+        try {
+          if (dbOrder.items) {
+            items = Array.isArray(dbOrder.items) 
+              ? (dbOrder.items as unknown as OrderItem[])
+              : [];
+          }
+          
+          if (dbOrder.toppings) {
+            toppings = Array.isArray(dbOrder.toppings) 
+              ? (dbOrder.toppings as unknown as OrderItem[])
+              : [];
+          }
+        } catch (parseError) {
+          console.error("Erro ao processar items/toppings:", parseError);
+        }
+        
+        const transformedOrder: Order = {
+          id: dbOrder.id,
+          sessionId: dbOrder.session_id,
+          items,
+          toppings,
+          total: Number(dbOrder.total),
+          address: dbOrder.address,
+          paymentMethod: dbOrder.payment_method,
+          status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
+          createdAt: dbOrder.created_at,
+          estimatedDelivery: dbOrder.estimated_delivery,
+          observations: dbOrder.observations
+        };
+        
+        console.log("Pedido transformado:", transformedOrder);
+        return transformedOrder;
+      });
+      
+      console.log("=== PEDIDOS FINAIS ===", transformedOrders);
+      return transformedOrders;
     },
     refetchInterval: 5000,
   });
@@ -157,8 +94,7 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
     return keyword.includes(search) || address.includes(search);
   });
 
-  console.log("=== RESULTADO FINAL ===");
-  console.log("Orders recebidas:", orders);
+  console.log("Orders finais recebidas:", orders);
   console.log("Filtered orders:", filteredOrders);
 
   if (isLoading) {
