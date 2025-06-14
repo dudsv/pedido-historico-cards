@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { OrderColumn } from "@/components/OrderColumn";
@@ -19,27 +20,71 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
   const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
+      console.log("Fetching orders from pedidos_orders table...");
+      
       const { data, error } = await supabase
         .from("pedidos_orders")
         .select("*")
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching orders:", error);
+        throw error;
+      }
+      
+      console.log("Raw data from database:", data);
+      
+      if (!data || data.length === 0) {
+        console.log("No orders found in database");
+        return [];
+      }
       
       // Transform database data to match our Order interface
-      return data.map((dbOrder): Order => ({
-        id: dbOrder.id,
-        sessionId: dbOrder.session_id,
-        items: Array.isArray(dbOrder.items) ? (dbOrder.items as unknown) as OrderItem[] : [],
-        toppings: Array.isArray(dbOrder.toppings) ? (dbOrder.toppings as unknown) as OrderItem[] : [],
-        total: dbOrder.total,
-        address: dbOrder.address,
-        paymentMethod: dbOrder.payment_method,
-        status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
-        createdAt: dbOrder.created_at,
-        estimatedDelivery: dbOrder.estimated_delivery,
-        observations: dbOrder.observations
-      }));
+      const transformedOrders = data.map((dbOrder): Order => {
+        console.log("Transforming order:", dbOrder);
+        
+        // Safely parse items and toppings
+        let items: OrderItem[] = [];
+        let toppings: OrderItem[] = [];
+        
+        try {
+          if (dbOrder.items && Array.isArray(dbOrder.items)) {
+            items = dbOrder.items.map((item: any) => ({
+              name: item.name || 'Item não especificado',
+              price: typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0
+            }));
+          }
+          
+          if (dbOrder.toppings && Array.isArray(dbOrder.toppings)) {
+            toppings = dbOrder.toppings.map((topping: any) => ({
+              name: topping.name || 'Topping não especificado',
+              price: typeof topping.price === 'number' ? topping.price : parseFloat(topping.price) || 0
+            }));
+          }
+        } catch (parseError) {
+          console.error("Error parsing items/toppings:", parseError);
+        }
+        
+        const transformedOrder: Order = {
+          id: dbOrder.id,
+          sessionId: dbOrder.session_id,
+          items,
+          toppings,
+          total: dbOrder.total,
+          address: dbOrder.address,
+          paymentMethod: dbOrder.payment_method,
+          status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
+          createdAt: dbOrder.created_at,
+          estimatedDelivery: dbOrder.estimated_delivery,
+          observations: dbOrder.observations
+        };
+        
+        console.log("Transformed order:", transformedOrder);
+        return transformedOrder;
+      });
+      
+      console.log("All transformed orders:", transformedOrders);
+      return transformedOrders;
     },
     refetchInterval: 5000, // Atualiza a cada 5 segundos
   });
@@ -52,6 +97,8 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
     return keyword.includes(search) || address.includes(search);
   });
 
+  console.log("Filtered orders:", filteredOrders);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -62,9 +109,16 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
   }
 
   if (error) {
+    console.error("Query error:", error);
     return (
       <div className="text-center py-12">
         <p className="text-red-600">Erro ao carregar pedidos: {error.message}</p>
+        <button 
+          onClick={() => refetch()} 
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Tentar novamente
+        </button>
       </div>
     );
   }
@@ -73,6 +127,8 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {ORDER_STATUSES.map((status) => {
         const statusOrders = filteredOrders?.filter(order => order.status === status.key) || [];
+        
+        console.log(`Orders for status ${status.key}:`, statusOrders);
         
         return (
           <OrderColumn
