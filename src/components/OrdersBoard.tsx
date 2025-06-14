@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { OrderColumn } from "@/components/OrderColumn";
 import { Loader2 } from "lucide-react";
-import { Order } from "@/types/order";
+import { Order, OrderItem } from "@/types/order";
 
 interface OrdersBoardProps {
   searchTerm: string;
@@ -32,8 +32,8 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
       return data.map((dbOrder): Order => ({
         id: dbOrder.id,
         sessionId: dbOrder.session_id,
-        items: Array.isArray(dbOrder.items) ? dbOrder.items : [],
-        toppings: Array.isArray(dbOrder.toppings) ? dbOrder.toppings : [],
+        items: Array.isArray(dbOrder.items) ? dbOrder.items as OrderItem[] : [],
+        toppings: Array.isArray(dbOrder.toppings) ? dbOrder.toppings as OrderItem[] : [],
         total: dbOrder.total,
         address: dbOrder.address,
         paymentMethod: dbOrder.payment_method,
