@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MapPin, Clock, CreditCard, Package, Printer, Check, Truck, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,13 +46,26 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
       ));
     }
     
-    // Fallback para extrair do observations se não houver items estruturados
+    // Extrair apenas o produto principal e toppings da mensagem
     if (order.observations) {
-      const match = order.observations.match(/- (.+?)(?:\n|$)/);
-      const itemDescription = match ? match[1] : "Itens não especificados";
+      // Buscar o padrão do produto principal (ex: "Açaí de 12oz")
+      const productMatch = order.observations.match(/^[^-]*?(?=\s*-\s*Topping|Total|Endereço|$)/);
+      let productName = productMatch ? productMatch[0].trim() : "";
+      
+      // Extrair todos os toppings
+      const toppingsMatches = order.observations.match(/- Topping: [^-]+/g);
+      let toppingsText = "";
+      
+      if (toppingsMatches) {
+        toppingsText = toppingsMatches.join(" ");
+      }
+      
+      // Combinar produto e toppings
+      const fullItem = productName + (toppingsText ? " " + toppingsText : "");
+      
       return (
         <div className="text-sm text-gray-700 font-medium">
-          {itemDescription}
+          {fullItem || "Itens não especificados"}
         </div>
       );
     }
@@ -221,7 +233,6 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
         <div className="text-xs text-gray-500 font-medium">Itens:</div>
         <div className="space-y-1">
           {getMainItems()}
-          {getToppings()}
         </div>
       </div>
 
