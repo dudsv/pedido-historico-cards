@@ -46,18 +46,40 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
       ));
     }
     
-    // Extrair produto principal e toppings da mensagem de observações
+    // Extrair apenas produto principal e toppings da mensagem
     if (order.observations) {
       const fullMessage = order.observations;
       
-      // Extrair linha que contém o produto e toppings (antes de "Total:")
-      const itemsMatch = fullMessage.match(/^(.+?)(?=\s*Total:)/s);
-      if (itemsMatch) {
-        const itemsText = itemsMatch[1].trim();
+      // Extrair apenas as linhas que contêm o produto e toppings (antes de "Total:")
+      const lines = fullMessage.split('\n');
+      const productAndToppings = [];
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        // Parar quando encontrar "Total:" ou outras informações
+        if (trimmedLine.startsWith('Total:') || 
+            trimmedLine.startsWith('Endereço:') || 
+            trimmedLine.startsWith('Pagamento:') ||
+            trimmedLine.includes('Pedido confirmado') ||
+            trimmedLine.includes('palavra-chave') ||
+            trimmedLine.includes('Guarde sua') ||
+            trimmedLine.includes('Agradecemos')) {
+          break;
+        }
         
-        // Limpar qualquer quebra de linha e espaços extras
-        const cleanedText = itemsText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-        
+        // Adicionar linhas que contêm produto ou toppings
+        if (trimmedLine && 
+            (trimmedLine.includes('Açaí') || 
+             trimmedLine.includes('Topping:') || 
+             trimmedLine.includes('Fruit Salad') ||
+             trimmedLine.includes('Magic Boat') ||
+             trimmedLine.includes('Smoothie'))) {
+          productAndToppings.push(trimmedLine);
+        }
+      }
+      
+      if (productAndToppings.length > 0) {
+        const cleanedText = productAndToppings.join(' ').replace(/\s+/g, ' ').trim();
         return (
           <div className="text-sm text-gray-700 font-medium">
             {cleanedText}
