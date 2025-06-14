@@ -15,6 +15,7 @@ interface Order {
   status: string;
   observations: string | null;
   items: any;
+  toppings: any;
   estimated_delivery: string | null;
   created_at: string;
   updated_at: string;
@@ -37,11 +38,51 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
     return "N/A";
   };
 
-  const getItemsDescription = () => {
+  const getMainItems = () => {
     if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-      return order.items[0]?.description || "Itens não especificados";
+      return order.items.map((item, index) => (
+        <div key={index} className="flex justify-between items-center">
+          <span className="text-sm text-gray-700">{item.description || item.name || "Item não especificado"}</span>
+          <span className="text-sm font-medium text-gray-900">
+            {item.price ? `R$ ${parseFloat(item.price).toFixed(2)}` : ""}
+          </span>
+        </div>
+      ));
     }
-    return "Itens não especificados";
+    
+    // Fallback para extrair do observations se não houver items estruturados
+    if (order.observations) {
+      const match = order.observations.match(/- (.+?)(?:\n|$)/);
+      const itemDescription = match ? match[1] : "Itens não especificados";
+      return (
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-700">{itemDescription}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-700">Itens não especificados</span>
+      </div>
+    );
+  };
+
+  const getToppings = () => {
+    if (order.toppings && Array.isArray(order.toppings) && order.toppings.length > 0) {
+      return order.toppings.map((topping, index) => (
+        <div key={index} className="flex justify-between items-center ml-4">
+          <span className="text-xs text-gray-600">{topping.name}</span>
+          <span className="text-xs text-gray-600">
+            {topping.price === 0 || topping.included ? 
+              <span className="text-green-600">Incluso</span> : 
+              `R$ ${parseFloat(topping.price).toFixed(2)}`
+            }
+          </span>
+        </div>
+      ));
+    }
+    return null;
   };
 
   const updateOrderStatus = async (newStatus: string) => {
@@ -119,6 +160,9 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
   };
 
   const handlePrint = () => {
+    const toppingsText = order.toppings && Array.isArray(order.toppings) ? 
+      order.toppings.map(t => `  ${t.name}: ${t.price === 0 || t.included ? 'Incluso' : `R$ ${parseFloat(t.price).toFixed(2)}`}`).join('\n') : '';
+    
     const printContent = `
       PEDIDO ${getKeyword()}
       
@@ -126,7 +170,12 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
       Endereço: ${order.address}
       
       Itens:
-      ${getItemsDescription()}
+      ${order.items && Array.isArray(order.items) ? 
+        order.items.map(item => item.description || item.name || 'Item').join('\n') : 
+        'Itens não especificados'
+      }
+      
+      ${toppingsText ? `Adicionais:\n${toppingsText}` : ''}
       
       Total: R$ ${order.total.toFixed(2)}
       Pagamento: ${order.payment_method}
@@ -180,17 +229,26 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
         </Button>
       </div>
 
-      <div className="space-y-2 mb-4">
+      <div className="space-y-3 mb-4">
+        <div>
+          <div className="text-xs font-medium text-gray-500 mb-1">Itens:</div>
+          <div className="space-y-1">
+            {getMainItems()}
+          </div>
+        </div>
+
+        {getToppings() && (
+          <div>
+            <div className="text-xs font-medium text-gray-500 mb-1">Toppings:</div>
+            <div className="space-y-1">
+              {getToppings()}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-start gap-2">
           <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
           <span className="text-sm text-gray-700 break-words">{order.address}</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span className="text-sm text-gray-700 line-clamp-2">
-            {getItemsDescription()}
-          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -211,11 +269,16 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
         )}
       </div>
 
-      <div className="flex justify-between items-center">
-        <span className="font-semibold text-green-600">
-          R$ {order.total.toFixed(2)}
-        </span>
-        {getActionButton()}
+      <div className="border-t pt-3">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="text-xs text-gray-500">Total:</div>
+            <span className="font-semibold text-green-600 text-lg">
+              R$ {order.total.toFixed(2)}
+            </span>
+          </div>
+          {getActionButton()}
+        </div>
       </div>
     </div>
   );
