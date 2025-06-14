@@ -29,6 +29,10 @@ const OrdersDashboard = () => {
     refetch();
   };
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -41,7 +45,7 @@ const OrdersDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{error.message}</p>
-            <Button onClick={refetch} className="w-full">
+            <Button onClick={handleRefresh} className="w-full">
               <RefreshCw className="h-4 w-4 mr-2" />
               Tentar Novamente
             </Button>
@@ -65,7 +69,7 @@ const OrdersDashboard = () => {
             </p>
           </div>
           <Button 
-            onClick={refetch} 
+            onClick={handleRefresh} 
             disabled={loading}
             variant="outline"
           >
@@ -185,7 +189,7 @@ const OrdersDashboard = () => {
                   : `Não há pedidos com status "${selectedStatus}".`
                 }
               </p>
-              <Button onClick={refetch} variant="outline">
+              <Button onClick={handleRefresh} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Verificar Novamente
               </Button>
