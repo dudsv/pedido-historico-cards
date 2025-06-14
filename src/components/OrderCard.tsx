@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, CreditCard, Package, FileText } from 'lucide-react';
@@ -8,9 +7,10 @@ import OrderStatusButtons from './OrderStatusButtons';
 interface OrderCardProps {
   order: Order;
   onStatusChange?: (orderId: string, newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered') => void;
+  isUpdating?: boolean;
 }
 
-const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
+const OrderCard = ({ order, onStatusChange, isUpdating = false }: OrderCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'bg-blue-500';
@@ -45,7 +45,7 @@ const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
   };
 
   return (
-    <Card className="w-full hover:shadow-lg transition-shadow">
+    <Card className={`w-full hover:shadow-lg transition-shadow ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-semibold">
@@ -128,10 +128,14 @@ const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
         {/* Botões de Status */}
         {onStatusChange && (
           <div className="border-t pt-4">
-            <div className="text-sm font-medium mb-2">Atualizar Status:</div>
+            <div className="text-sm font-medium mb-2">
+              Atualizar Status:
+              {isUpdating && <span className="text-muted-foreground ml-2">(Atualizando...)</span>}
+            </div>
             <OrderStatusButtons 
               currentStatus={order.status}
               onStatusChange={handleStatusChange}
+              disabled={isUpdating}
             />
           </div>
         )}

@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Package, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { useOrdersQuery } from '@/hooks/useOrdersQuery';
+import { useUpdateOrderStatus } from '@/hooks/useUpdateOrderStatus';
 import OrderCard from './OrderCard';
 
 const OrdersDashboard = () => {
   const { data: orders = [], isLoading: loading, error, refetch } = useOrdersQuery();
+  const updateOrderStatus = useUpdateOrderStatus();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   const filteredOrders = selectedStatus === 'all' 
@@ -24,9 +26,8 @@ const OrdersDashboard = () => {
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
 
   const handleStatusChange = (orderId: string, newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered') => {
-    // This would need to be implemented with a mutation
-    console.log('Status change requested:', { orderId, newStatus });
-    refetch();
+    console.log('Mudança de status solicitada:', { orderId, newStatus });
+    updateOrderStatus.mutate({ orderId, newStatus });
   };
 
   const handleRefresh = () => {
@@ -70,7 +71,7 @@ const OrdersDashboard = () => {
           </div>
           <Button 
             onClick={handleRefresh} 
-            disabled={loading}
+            disabled={loading || updateOrderStatus.isPending}
             variant="outline"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -175,6 +176,7 @@ const OrdersDashboard = () => {
                 key={order.id} 
                 order={order} 
                 onStatusChange={handleStatusChange}
+                isUpdating={updateOrderStatus.isPending}
               />
             ))}
           </div>

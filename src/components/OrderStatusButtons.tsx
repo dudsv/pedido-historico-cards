@@ -1,12 +1,14 @@
+
 import { Button } from '@/components/ui/button';
 import { Clock, Package, Truck, CheckCircle } from 'lucide-react';
 
 interface OrderStatusButtonsProps {
   currentStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered';
   onStatusChange: (newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered') => void;
+  disabled?: boolean;
 }
 
-const OrderStatusButtons = ({ currentStatus, onStatusChange }: OrderStatusButtonsProps) => {
+const OrderStatusButtons = ({ currentStatus, onStatusChange, disabled = false }: OrderStatusButtonsProps) => {
   const statuses = [
     { key: 'confirmed', label: 'Confirmado', icon: Clock, color: 'bg-blue-500' },
     { key: 'preparing', label: 'Preparando', icon: Package, color: 'bg-orange-500' },
@@ -30,11 +32,11 @@ const OrderStatusButtons = ({ currentStatus, onStatusChange }: OrderStatusButton
             size="sm"
             variant={isActive ? "default" : "outline"}
             onClick={() => onStatusChange(status.key)}
-            disabled={isPrevious}
+            disabled={disabled || isPrevious}
             className={`
               ${isActive ? `${status.color} text-white hover:opacity-90` : ''}
               ${isNext ? 'border-2 border-blue-300' : ''}
-              ${isPrevious ? 'opacity-50' : ''}
+              ${isPrevious || disabled ? 'opacity-50' : ''}
             `}
           >
             <Icon className="h-3 w-3 mr-1" />
