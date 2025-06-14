@@ -1,20 +1,6 @@
 
 import OrderCard from "@/components/OrderCard";
-
-interface Order {
-  id: string;
-  session_id: string;
-  total: number;
-  address: string;
-  payment_method: string;
-  status: string;
-  observations: string | null;
-  items: any;
-  toppings: any;
-  estimated_delivery: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Order } from "@/types/order";
 
 interface OrderColumnProps {
   title: string;
