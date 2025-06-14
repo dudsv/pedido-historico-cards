@@ -46,28 +46,24 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
       ));
     }
     
-    // Extrair apenas o produto principal e toppings da mensagem
+    // Extrair produto principal e toppings da mensagem de observações
     if (order.observations) {
-      // Buscar o padrão do produto principal (ex: "Açaí de 12oz")
-      const productMatch = order.observations.match(/^[^-]*?(?=\s*-\s*Topping|Total|Endereço|$)/);
-      let productName = productMatch ? productMatch[0].trim() : "";
+      const fullMessage = order.observations;
       
-      // Extrair todos os toppings
-      const toppingsMatches = order.observations.match(/- Topping: [^-]+/g);
-      let toppingsText = "";
-      
-      if (toppingsMatches) {
-        toppingsText = toppingsMatches.join(" ");
+      // Extrair linha que contém o produto e toppings (antes de "Total:")
+      const itemsMatch = fullMessage.match(/^(.+?)(?=\s*Total:)/s);
+      if (itemsMatch) {
+        const itemsText = itemsMatch[1].trim();
+        
+        // Limpar qualquer quebra de linha e espaços extras
+        const cleanedText = itemsText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        
+        return (
+          <div className="text-sm text-gray-700 font-medium">
+            {cleanedText}
+          </div>
+        );
       }
-      
-      // Combinar produto e toppings
-      const fullItem = productName + (toppingsText ? " " + toppingsText : "");
-      
-      return (
-        <div className="text-sm text-gray-700 font-medium">
-          {fullItem || "Itens não especificados"}
-        </div>
-      );
     }
     
     return (
