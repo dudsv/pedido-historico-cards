@@ -1,5 +1,3 @@
-
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { OrderColumn } from "@/components/OrderColumn";
@@ -32,8 +30,8 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
       return data.map((dbOrder): Order => ({
         id: dbOrder.id,
         sessionId: dbOrder.session_id,
-        items: Array.isArray(dbOrder.items) ? dbOrder.items as OrderItem[] : [],
-        toppings: Array.isArray(dbOrder.toppings) ? dbOrder.toppings as OrderItem[] : [],
+        items: Array.isArray(dbOrder.items) ? (dbOrder.items as unknown) as OrderItem[] : [],
+        toppings: Array.isArray(dbOrder.toppings) ? (dbOrder.toppings as unknown) as OrderItem[] : [],
         total: dbOrder.total,
         address: dbOrder.address,
         paymentMethod: dbOrder.payment_method,
@@ -90,4 +88,3 @@ export const OrdersBoard = ({ searchTerm }: OrdersBoardProps) => {
     </div>
   );
 };
-
