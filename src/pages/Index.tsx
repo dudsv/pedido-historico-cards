@@ -1,11 +1,16 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import { OrdersBoard } from "@/components/OrdersBoard";
+import { OrdersHeader } from "@/components/OrdersHeader";
 
 const Index = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <OrdersHeader searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+        <OrdersBoard searchTerm={searchTerm} />
       </div>
     </div>
   );
