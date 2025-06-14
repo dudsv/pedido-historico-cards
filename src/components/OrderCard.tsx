@@ -46,45 +46,26 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
       ));
     }
     
-    // Extrair apenas produto principal e toppings da mensagem
+    // Extrair apenas produto principal e toppings da mensagem (até "Total:")
     if (order.observations) {
       const fullMessage = order.observations;
       
-      // Extrair apenas as linhas que contêm o produto e toppings (antes de "Total:")
-      const lines = fullMessage.split('\n');
-      const productAndToppings = [];
-      
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        // Parar quando encontrar "Total:" ou outras informações
-        if (trimmedLine.startsWith('Total:') || 
-            trimmedLine.startsWith('Endereço:') || 
-            trimmedLine.startsWith('Pagamento:') ||
-            trimmedLine.includes('Pedido confirmado') ||
-            trimmedLine.includes('palavra-chave') ||
-            trimmedLine.includes('Guarde sua') ||
-            trimmedLine.includes('Agradecemos')) {
-          break;
-        }
+      // Encontrar a posição do "Total:" para parar a extração
+      const totalIndex = fullMessage.indexOf('Total:');
+      if (totalIndex !== -1) {
+        // Extrair apenas o texto antes de "Total:"
+        const itemsSection = fullMessage.substring(0, totalIndex).trim();
         
-        // Adicionar linhas que contêm produto ou toppings
-        if (trimmedLine && 
-            (trimmedLine.includes('Açaí') || 
-             trimmedLine.includes('Topping:') || 
-             trimmedLine.includes('Fruit Salad') ||
-             trimmedLine.includes('Magic Boat') ||
-             trimmedLine.includes('Smoothie'))) {
-          productAndToppings.push(trimmedLine);
+        // Remover quebras de linha e espaços extras
+        const cleanedText = itemsSection.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        
+        if (cleanedText) {
+          return (
+            <div className="text-sm text-gray-700 font-medium">
+              {cleanedText}
+            </div>
+          );
         }
-      }
-      
-      if (productAndToppings.length > 0) {
-        const cleanedText = productAndToppings.join(' ').replace(/\s+/g, ' ').trim();
-        return (
-          <div className="text-sm text-gray-700 font-medium">
-            {cleanedText}
-          </div>
-        );
       }
     }
     
