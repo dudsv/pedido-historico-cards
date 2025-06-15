@@ -7,14 +7,14 @@ export const useOrdersQuery = () => {
   return useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      console.log("=== BUSCANDO PEDIDOS DA NOVA TABELA pedidos_orders ===");
+      console.log("=== BUSCANDO PEDIDOS DA TABELA pedidos_orders ===");
       
       const { data: pedidosData, error: pedidosError } = await supabase
         .from("pedidos_orders")
         .select("*")
         .order("created_at", { ascending: false });
       
-      console.log("Dados da nova tabela pedidos_orders:", { pedidosData, pedidosError });
+      console.log("Dados da tabela pedidos_orders:", { pedidosData, pedidosError });
       
       if (pedidosError) {
         console.error("Erro ao buscar pedidos:", pedidosError);

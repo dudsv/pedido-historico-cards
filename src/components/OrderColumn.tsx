@@ -1,6 +1,7 @@
 
 import OrderCard from "@/components/OrderCard";
 import { Order } from "@/types/order";
+import { useUpdateOrderStatus } from "@/hooks/useUpdateOrderStatus";
 
 interface OrderColumnProps {
   title: string;
@@ -11,6 +12,13 @@ interface OrderColumnProps {
 }
 
 export const OrderColumn = ({ title, status, color, orders, onRefresh }: OrderColumnProps) => {
+  const updateOrderStatus = useUpdateOrderStatus();
+
+  const handleStatusChange = (orderId: string, newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered') => {
+    console.log('Mudança de status solicitada na coluna:', { orderId, newStatus });
+    updateOrderStatus.mutate({ orderId, newStatus });
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex items-center justify-between mb-4">
@@ -30,7 +38,8 @@ export const OrderColumn = ({ title, status, color, orders, onRefresh }: OrderCo
             <OrderCard 
               key={order.id} 
               order={order} 
-              onStatusChange={onRefresh}
+              onStatusChange={handleStatusChange}
+              isUpdating={updateOrderStatus.isPending}
             />
           ))
         )}
