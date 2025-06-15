@@ -7,14 +7,14 @@ export const useOrdersQuery = () => {
   return useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      console.log("=== BUSCANDO PEDIDOS DA TABELA pedidos_orders ===");
+      console.log("=== BUSCANDO PEDIDOS DA VIEW vw_gnomus_pedidos ===");
       
       const { data: pedidosData, error: pedidosError } = await supabase
-        .from("pedidos_orders")
+        .from("vw_gnomus_pedidos")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("criado_em", { ascending: false });
       
-      console.log("Dados da tabela pedidos_orders:", { pedidosData, pedidosError });
+      console.log("Dados da view vw_gnomus_pedidos:", { pedidosData, pedidosError });
       
       if (pedidosError) {
         console.error("Erro ao buscar pedidos:", pedidosError);
@@ -22,51 +22,67 @@ export const useOrdersQuery = () => {
       }
       
       if (!pedidosData || pedidosData.length === 0) {
-        console.log("Nenhum pedido encontrado na tabela pedidos_orders");
+        console.log("Nenhum pedido encontrado na view vw_gnomus_pedidos");
         return [];
       }
       
       const transformedOrders = pedidosData.map((dbOrder): Order => {
         console.log("Transformando pedido:", dbOrder);
         
-        // Parse items safely
         let items: OrderItem[] = [];
-        
-        try {
-          if (dbOrder.items && Array.isArray(dbOrder.items)) {
-            items = dbOrder.items.map((dbItem: any) => ({
-              name: dbItem.name || 'Item',
-              price: Number(dbItem.price) || 0
-            }));
-          }
-          
-          // Se não há itens específicos, criar um item genérico com o total
-          if (items.length === 0) {
-            items = [{
-              name: 'Pedido',
-              price: Number(dbOrder.total) || 0
-            }];
-          }
-        } catch (parseError) {
-          console.error("Erro ao processar items:", parseError);
-          items = [{
-            name: 'Pedido',
-            price: Number(dbOrder.total) || 0
-          }];
+        let toppings: OrderItem[] = [];
+
+        if (dbOrder.produto_principal) {
+            items.push({
+                name: `${dbOrder.produto_principal}${dbOrder.combinacao ? ` (${dbOrder.combinacao})` : ''}`,
+                price: Number(dbOrder.preco_principal) || 0
+            });
         }
         
+        if (dbOrder.toppings) {
+            toppings = dbOrder.toppings.split(',').map((topping: string) => ({
+                name: topping.trim(),
+                price: 0
+            }));
+        }
+
+        if (dbOrder.magic_boat) {
+            items.push({
+                name: `Magic Boat: ${dbOrder.magic_boat}`,
+                price: 0
+            });
+        }
+
+        // Fallback
+        if (items.length === 0) {
+            items = [{
+              name: 'Pedido',
+              price: Number(dbOrder.valor_total) || 0
+            }];
+        }
+        
+        const statusMap: { [key: string]: 'confirmed' | 'preparing' | 'delivering' | 'delivered' } = {
+          'confirmado': 'confirmed',
+          'preparando': 'preparing',
+          'entregando': 'delivering',
+          'saiu para entrega': 'delivering',
+          'entregue': 'delivered',
+        };
+
+        const statusKey = dbOrder.status_pedido?.toLowerCase() || 'confirmado';
+        const mappedStatus = statusMap[statusKey] || 'confirmed';
+
         const transformedOrder: Order = {
-          id: dbOrder.id,
-          sessionId: dbOrder.session_id,
+          id: dbOrder.id!,
+          sessionId: dbOrder.palavra_chave || 'N/A',
           items,
-          toppings: [], // Nova estrutura não tem toppings separados
-          total: Number(dbOrder.total),
-          address: dbOrder.address,
-          paymentMethod: dbOrder.payment_method,
-          status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
-          createdAt: dbOrder.created_at,
-          estimatedDelivery: dbOrder.estimated_delivery,
-          observations: dbOrder.observations || `Palavra-chave: ${dbOrder.keyword}`
+          toppings,
+          total: Number(dbOrder.valor_total) || 0,
+          address: dbOrder.endereco || 'Endereço não informado',
+          paymentMethod: dbOrder.forma_pagamento || 'Não informado',
+          status: mappedStatus,
+          createdAt: dbOrder.criado_em!,
+          observations: dbOrder.observacoes || `Palavra-chave: ${dbOrder.palavra_chave}`
         };
         
         console.log("Pedido transformado:", transformedOrder);

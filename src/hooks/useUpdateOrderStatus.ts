@@ -9,13 +9,21 @@ export const useUpdateOrderStatus = () => {
 
   return useMutation({
     mutationFn: async ({ orderId, newStatus }: { orderId: string; newStatus: 'confirmed' | 'preparing' | 'delivering' | 'delivered' }) => {
-      console.log(`Atualizando status do pedido ${orderId} para ${newStatus}`);
+      const statusMap: { [key in 'confirmed' | 'preparing' | 'delivering' | 'delivered']: string } = {
+        confirmed: 'Confirmado',
+        preparing: 'Preparando',
+        delivering: 'Entregando',
+        delivered: 'Entregue',
+      };
+      const dbStatus = statusMap[newStatus];
+
+      console.log(`Atualizando status do pedido ${orderId} para ${dbStatus} na tabela gnomus_pedidos`);
       
       const { data, error } = await supabase
-        .from('pedidos_orders')
+        .from('gnomus_pedidos')
         .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
+          status_pedido: dbStatus,
+          atualizado_em: new Date().toISOString()
         })
         .eq('id', orderId)
         .select();

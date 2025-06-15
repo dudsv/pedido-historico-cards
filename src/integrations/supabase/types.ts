@@ -48,6 +48,45 @@ export type Database = {
         }
         Relationships: []
       }
+      gnomus_pedidos: {
+        Row: {
+          atualizado_em: string | null
+          criado_em: string | null
+          endereco: string
+          forma_pagamento: string
+          id: string
+          observacoes: string | null
+          palavra_chave: string
+          pedido: Json
+          status_pedido: string | null
+          valor_total: number
+        }
+        Insert: {
+          atualizado_em?: string | null
+          criado_em?: string | null
+          endereco: string
+          forma_pagamento: string
+          id?: string
+          observacoes?: string | null
+          palavra_chave: string
+          pedido: Json
+          status_pedido?: string | null
+          valor_total: number
+        }
+        Update: {
+          atualizado_em?: string | null
+          criado_em?: string | null
+          endereco?: string
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          palavra_chave?: string
+          pedido?: Json
+          status_pedido?: string | null
+          valor_total?: number
+        }
+        Relationships: []
+      }
       n8n_chat_histories: {
         Row: {
           id: number
@@ -84,54 +123,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pedidos_orders: {
-        Row: {
-          address: string
-          created_at: string | null
-          customer_name: string | null
-          estimated_delivery: string | null
-          id: string
-          items: Json
-          keyword: string
-          observations: string | null
-          payment_method: string
-          session_id: string
-          status: string
-          total: number
-          updated_at: string | null
-        }
-        Insert: {
-          address: string
-          created_at?: string | null
-          customer_name?: string | null
-          estimated_delivery?: string | null
-          id?: string
-          items?: Json
-          keyword: string
-          observations?: string | null
-          payment_method: string
-          session_id: string
-          status?: string
-          total: number
-          updated_at?: string | null
-        }
-        Update: {
-          address?: string
-          created_at?: string | null
-          customer_name?: string | null
-          estimated_delivery?: string | null
-          id?: string
-          items?: Json
-          keyword?: string
-          observations?: string | null
-          payment_method?: string
-          session_id?: string
-          status?: string
-          total?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       "Peter Parker": {
         Row: {
           created_at: string
@@ -164,7 +155,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_gnomus_pedidos: {
+        Row: {
+          combinacao: string | null
+          criado_em: string | null
+          endereco: string | null
+          forma_pagamento: string | null
+          id: string | null
+          magic_boat: string | null
+          observacoes: string | null
+          palavra_chave: string | null
+          preco_principal: number | null
+          produto_principal: string | null
+          status_pedido: string | null
+          toppings: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          combinacao?: never
+          criado_em?: string | null
+          endereco?: string | null
+          forma_pagamento?: string | null
+          id?: string | null
+          magic_boat?: never
+          observacoes?: string | null
+          palavra_chave?: string | null
+          preco_principal?: never
+          produto_principal?: never
+          status_pedido?: string | null
+          toppings?: never
+          valor_total?: number | null
+        }
+        Update: {
+          combinacao?: never
+          criado_em?: string | null
+          endereco?: string | null
+          forma_pagamento?: string | null
+          id?: string | null
+          magic_boat?: never
+          observacoes?: string | null
+          palavra_chave?: string | null
+          preco_principal?: never
+          produto_principal?: never
+          status_pedido?: string | null
+          toppings?: never
+          valor_total?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       binary_quantize: {
