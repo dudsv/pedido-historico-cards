@@ -7,14 +7,14 @@ export const useOrdersQuery = () => {
   return useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      console.log("=== BUSCANDO PEDIDOS DA NOVA TABELA pedidos_orders ===");
+      console.log("=== BUSCANDO PEDIDOS DA TABELA pedidos_orders ===");
       
       const { data: pedidosData, error: pedidosError } = await supabase
         .from("pedidos_orders")
         .select("*")
         .order("created_at", { ascending: false });
       
-      console.log("Dados da nova tabela pedidos_orders:", { pedidosData, pedidosError });
+      console.log("Dados encontrados:", { pedidosData, pedidosError });
       
       if (pedidosError) {
         console.error("Erro ao buscar pedidos:", pedidosError);
@@ -26,8 +26,15 @@ export const useOrdersQuery = () => {
         return [];
       }
       
+      console.log(`📊 Total de ${pedidosData.length} pedidos encontrados`);
+      
       const transformedOrders = pedidosData.map((dbOrder): Order => {
-        console.log("Transformando pedido:", dbOrder);
+        console.log("Transformando pedido:", {
+          id: dbOrder.id,
+          keyword: dbOrder.keyword,
+          total: dbOrder.total,
+          session_id: dbOrder.session_id
+        });
         
         // Parse items safely
         let items: OrderItem[] = [];
@@ -43,14 +50,14 @@ export const useOrdersQuery = () => {
           // Se não há itens específicos, criar um item genérico com o total
           if (items.length === 0) {
             items = [{
-              name: 'Pedido',
+              name: 'Pedido de Açaí',
               price: Number(dbOrder.total) || 0
             }];
           }
         } catch (parseError) {
           console.error("Erro ao processar items:", parseError);
           items = [{
-            name: 'Pedido',
+            name: 'Pedido de Açaí',
             price: Number(dbOrder.total) || 0
           }];
         }
@@ -61,19 +68,27 @@ export const useOrdersQuery = () => {
           items,
           toppings: [], // Nova estrutura não tem toppings separados
           total: Number(dbOrder.total),
-          address: dbOrder.address,
-          paymentMethod: dbOrder.payment_method,
-          status: dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered',
+          address: dbOrder.address || 'Endereço não informado',
+          paymentMethod: dbOrder.payment_method || 'Não informado',
+          status: (dbOrder.status as 'confirmed' | 'preparing' | 'delivering' | 'delivered') || 'confirmed',
           createdAt: dbOrder.created_at,
           estimatedDelivery: dbOrder.estimated_delivery,
-          observations: dbOrder.observations || `Palavra-chave: ${dbOrder.keyword}`
+          observations: dbOrder.observations || (dbOrder.keyword ? `Palavra-chave: ${dbOrder.keyword}` : '')
         };
         
-        console.log("Pedido transformado:", transformedOrder);
+        console.log("✅ Pedido transformado:", {
+          id: transformedOrder.id,
+          keyword: dbOrder.keyword,
+          total: transformedOrder.total,
+          address: transformedOrder.address?.substring(0, 30) + '...'
+        });
+        
         return transformedOrder;
       });
       
-      console.log("=== PEDIDOS FINAIS ===", transformedOrders);
+      console.log("=== PEDIDOS FINAIS PARA DASHBOARD ===", transformedOrders);
+      console.log(`🎯 Retornando ${transformedOrders.length} pedidos para o dashboard`);
+      
       return transformedOrders;
     },
     refetchInterval: 5000, // Atualiza a cada 5 segundos para capturar novos pedidos
